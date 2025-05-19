@@ -1,5 +1,7 @@
 # PICO-8 Particle System
 
+[Try it](https://donbattery.github.io/psys/)
+
 ## Controls
 - Move the focus with the **arrow keys**
 - Place one particle into the system with **left click**
