@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>pico-8 page</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- editor container -->
+    <div id="editor" class="themable theme-blue">
+        <!-- tab bar -->
+        <div class="tabs">
+            <button class="tab-btn themable theme-blue active" data-target="particles">particles</button>
+            <button class="tab-btn themable theme-blue" data-target="effects">effects</button>
+            <button class="tab-btn themable theme-blue" data-target="tables">tables</button>
+            <button class="tab-btn themable theme-blue" data-target="export">export</button>
+        </div>
+
+        <!-- tab contents -->
+        <div class="tab-content active" id="particles">
+            <p>particles mode</p>
+        </div>
+        <div class="tab-content" id="effects">
+            <p>effects mode</p>
+        </div>
+        <div class="tab-content" id="tables">
+            <p>tables mode</p>
+        </div>
+        <div class="tab-content" id="export">
+            <p>export mode</p>
+        </div>
+    </div>
+
+    <!-- pico-8 canvas -->
+    <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+
+    <!-- LED indicator -->
+    <div id="led" class="themable theme-blue"></div>
+
+    <!-- generator container -->
+    <div id="generator" class="generator themable theme-blue">
+        <!-- direction row 1 -->
+        <div class="row direction-row">
+            <label class="colored-label themable theme-blue flex-2">left</label>
+            <label class="switch themable theme-blue flex-1">
+                <input type="checkbox" id="left-switch">
+                <span class="slider-switch themable theme-blue"></span>
+            </label>
+            <label class="colored-label themable theme-blue flex-2">right</label>
+            <label class="switch themable theme-blue flex-1">
+                <input type="checkbox" id="right-switch">
+                <span class="slider-switch themable theme-blue"></span>
+            </label>
+        </div>
+
+        <!-- direction row 2 -->
+        <div class="row direction-row">
+            <label class="colored-label themable theme-blue flex-2">top</label>
+            <label class="switch themable theme-blue flex-1">
+                <input type="checkbox" id="top-switch">
+                <span class="slider-switch themable theme-blue"></span>
+            </label>
+            <label class="colored-label themable theme-blue flex-2">bot</label>
+            <label class="switch themable theme-blue flex-1">
+                <input type="checkbox" id="bottom-switch">
+                <span class="slider-switch themable theme-blue"></span>
+            </label>
+        </div>
+
+        <!-- density row -->
+        <div class="row density-row">
+            <label class="colored-label themable theme-blue flex-1">density</label>
+            <span class="colored-label themable theme-blue flex-1" id="density-value">0.50</span>
+            <input type="range" id="density-slider" class="slider themable theme-blue flex-3" min="0.48" max="0.52"
+                step="0.001" value="0.50">
+        </div>
+
+        <!-- world strength row -->
+        <div class="row world-strength-row">
+            <label class="colored-label themable theme-blue flex-1">world strength</label>
+            <span class="colored-label themable theme-blue flex-1" id="world-strength-value">1.00</span>
+            <input type="range" id="world-strength-slider" class="slider themable theme-blue flex-3" min="0" max="2"
+                step="0.01" value="1">
+        </div>
+
+        <!-- base color row -->
+        <div class="row color-row">
+            <label class="colored-label themable theme-blue flex-3">base</label>
+            <div class="color-dropdown flex-1">
+                <div id="base-color-preview" class="selected-color themable theme-blue"></div>
+                <select id="base-color" class="themable theme-blue color-select"></select>
+            </div>
+        </div>
+
+        <!-- highlight color row -->
+        <div class="row color-row">
+            <label class="colored-label themable theme-blue flex-3">highlight</label>
+            <div class="color-dropdown flex-1">
+                <div id="highlight-color-preview" class="selected-color themable theme-blue"></div>
+                <select id="highlight-color" class="themable theme-blue color-select"></select>
+            </div>
+        </div>
+
+        <!-- background color row -->
+        <div class="row color-row">
+            <label class="colored-label themable theme-blue flex-3">background</label>
+            <div class="color-dropdown flex-1">
+                <div id="background-color-preview" class="selected-color themable theme-blue"></div>
+                <select id="background-color" class="themable theme-blue extended-color-select"></select>
+            </div>
+        </div>
+
+        <!-- damage color row -->
+        <div class="row color-row">
+            <label class="colored-label themable theme-blue flex-3">damage</label>
+            <div class="color-dropdown flex-1">
+                <div id="damage-color-preview" class="selected-color themable theme-blue"></div>
+                <select id="damage-color" class="themable theme-blue color-select"></select>
+            </div>
+        </div>
+
+        <!-- generate button + palette selector -->
+        <div class="row generate-row">
+            <!-- generate button -->
+            <button id="generate-btn" class="themable theme-blue interactive flex-1">
+                generate
+            </button>
+            <!-- palette dropdown -->
+            <select id="palette-select" class="themable theme-blue flex-2">
+                <option value="1">palette-1</option>
+                <option value="2">palette-2</option>
+                <option value="3">palette-3</option>
+                <option value="4">palette-4</option>
+                <option value="5">palette-5</option>
+                <option value="6">palette-6</option>
+                <option value="7">palette-7</option>
+                <option value="8">palette-8</option>
+                <option value="9">palette-9</option>
+                <option value="10">palette-10</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- import jQuery, the editor logic and the PICO-8 test cart -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="editor.js"></script>
+    <script src="test.js"></script>
+</body>
+
+</html>

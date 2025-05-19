@@ -1,0 +1,415 @@
+/* style.css */
+
+/* 1) PICO-8 font + base reset */
+@font-face {
+    font-family: 'PICO-8';
+    src: url('pico-8.ttf') format('truetype');
+}
+
+* {
+    font-family: 'PICO-8', monospace;
+    margin: 2px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+html,
+body {
+    height: 100%;
+    background-color: var(--c0);
+}
+
+/* 2) core Pico-8 palette */
+:root {
+    --c0: #000000;
+    --c1: #1d2b53;
+    --c2: #7e2553;
+    --c3: #008751;
+    --c4: #ab5236;
+    --c5: #5f574f;
+    --c6: #c2c3c7;
+    --c7: #fff1e8;
+    --c8: #ff004d;
+    --c9: #ffa300;
+    --c10: #ffec27;
+    --c11: #00e436;
+    --c12: #29adff;
+    --c13: #83769c;
+    --c14: #ff77a8;
+    --c15: #ffccaa;
+}
+
+:root.extended-mode {
+    --c0: #291814;
+    --c1: #111d35;
+    --c2: #422136;
+    --c3: #125359;
+    --c4: #742f29;
+    --c5: #49333b;
+    --c6: #a28879;
+    --c7: #f3ef7d;
+    --c8: #be1250;
+    --c9: #ff6c24;
+    --c10: #a8e72e;
+    --c11: #00b543;
+    --c12: #065ab5;
+    --c13: #754665;
+    --c14: #ff6e59;
+    --c15: #ff9d81;
+}
+
+/* 3) Base "themable" (colors + border only) */
+.themable {
+    background: var(--bg);
+    color: var(--fg);
+    border: 4px solid var(--border);
+    border-radius: 8px;
+}
+
+/* 4) Interactive styling (buttons + switches) */
+.interactive {
+    box-shadow: 0 4px 0 var(--shadow);
+    transition: background 0.1s,
+        color 0.1s,
+        box-shadow 0.1s,
+        transform 0.1s;
+}
+
+.interactive:hover {
+    background: var(--bg-h);
+    color: var(--fg-h);
+    box-shadow: 0 4px 0 var(--shadow-h);
+    border-color: var(--border-h, var(--border));
+}
+
+.interactive:active {
+    box-shadow: none;
+    transform: translateY(4px);
+}
+
+/* 5) Themes */
+/* blue:    [0,1,13,12,7] */
+.theme-blue {
+    --shadow: var(--c0);
+    --shadow-h: var(--c1);
+    --bg: var(--c1);
+    --bg-h: var(--c13);
+    --fg: var(--c12);
+    --fg-h: var(--c7);
+    --border: var(--c12);
+}
+
+/* green:   [0,5,3,11,7] */
+.theme-green {
+    --shadow: var(--c0);
+    --shadow-h: var(--c5);
+    --bg: var(--c3);
+    --bg-h: var(--c11);
+    --fg: var(--c7);
+    --fg-h: var(--c7);
+    --border: var(--c7);
+}
+
+/* yellow:  [0,4,9,8,7] */
+.theme-yellow {
+    --shadow: var(--c0);
+    --shadow-h: var(--c4);
+    --bg: var(--c9);
+    --bg-h: var(--c8);
+    --fg: var(--c8);
+    --fg-h: var(--c7);
+    --border: var(--c7);
+}
+
+/* 6) Layout & utilities */
+/* editor pane */
+#editor {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 520px;
+    /* 4 + 512 + 4 */
+    bottom: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* generator pane */
+#generator {
+    position: absolute;
+    top: 530px;
+    right: 4px;
+    width: 512px;
+    bottom: 4px;
+    display: flex;
+    flex-direction: column;
+    padding: 4px;
+}
+
+/* Generate button styling */
+#generate-btn {
+    flex: 1;
+    text-align: center;
+    font-size: 1rem;
+    height: 32px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.1s;
+    margin-bottom: 0;
+    box-shadow: none;
+}
+
+#generate-btn:hover {
+    color: var(--c7);
+    border-color: var(--c7);
+}
+
+#generate-btn:active {
+    transform: translateY(4px);
+    /* Remove the padding when pressed to maintain height */
+    padding-bottom: 0;
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+#palette-select {
+    height: 32px;
+    text-align: center;
+    font-size: 1rem;
+}
+
+/* canvas */
+canvas {
+    position: fixed;
+    top: 4px;
+    right: 4px;
+    width: 512px;
+    height: 512px;
+    image-rendering: pixelated;
+    border-radius: 8px;
+    border: 4px solid var(--c12);
+}
+
+/* tabs */
+.tabs {
+    display: flex;
+    margin-bottom: 8px;
+    border-bottom: 4px solid var(--c12);
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 8px 0;
+    margin-right: 4px;
+    margin-bottom: 8px;
+    font-size: 1rem;
+    text-align: center;
+}
+
+.tab-btn:last-child {
+    margin-right: 0;
+}
+
+.tab-btn.active {
+    background: var(--c7) !important;
+    color: var(--c1) !important;
+    box-shadow: none !important;
+    border-bottom: 4px solid var(--c7) !important;
+}
+
+/* tab content */
+.tab-content {
+    display: none;
+    height: calc(100% - 40px);
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* rows & flex utilities */
+.row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.flex-2 {
+    flex: 2;
+}
+
+.flex-3 {
+    flex: 3;
+}
+
+/* colored-label */
+.colored-label {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+/* 7) Slider styling (static) */
+.slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 24px;
+    border-radius: 8px;
+    outline: none;
+}
+
+.slider::-webkit-slider-runnable-track {
+    background: var(--c13);
+    border: 4px solid var(--c12);
+    box-shadow: 0 4px 0 var(--c13);
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    border: 4px solid var(--c12);
+    background: var(--c1);
+    cursor: pointer;
+}
+
+.slider::-moz-range-track {
+    background: var(--c1);
+    border: 4px solid var(--c12);
+    box-shadow: 0 4px 0 var(--c13);
+}
+
+.slider::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    border: 4px solid var(--c12);
+    background: var(--c1);
+    cursor: pointer;
+}
+
+/* 8) Color-dropdown & previews */
+.color-dropdown {
+    position: relative;
+    display: flex;
+    /* align-items: center; */
+    text-align: center;
+}
+
+.color-dropdown select {
+    flex: 1;
+    min-width: 80px;
+    height: 32px;
+    text-align: center;
+    cursor: pointer;
+    padding-left: 36px;
+}
+
+.selected-color {
+    position: absolute;
+    left: 8px;
+    top: 16px;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 15px;
+    border: 2px solid var(--c7);
+    border-radius: 3px;
+}
+
+/* 8b) option hover & selected borders */
+/* force options to keep their inline bg + text colors */
+.color-dropdown select option {
+    background-image: none;
+    /* avoid any gradient overlays */
+}
+
+/* hovered option: yellow border by default */
+.color-dropdown select option:hover {
+    outline: 4px solid var(--c10) !important;
+    outline-offset: -2px;
+}
+
+/* except the 11th element (i===10) flips hover-border to light blue */
+.color-dropdown select option:nth-child(11):hover {
+    outline-color: var(--c12) !important;
+}
+
+/* selected (checked) option: light blue border */
+.color-dropdown select option:checked {
+    outline: 4px solid var(--c12) !important;
+    outline-offset: -2px;
+}
+
+/* except the 13th element (i===12) gets yellow when selected */
+.color-dropdown select option:nth-child(13):checked {
+    outline-color: var(--c10) !important;
+}
+
+/* 9) LED indicator */
+#led {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 4px solid var(--c1);
+    right: 6px;
+    top: 515px;
+    transition: background 0.1s;
+}
+
+#led.red {
+    background: var(--c8);
+}
+
+#led.green {
+    background: var(--c11);
+}
+
+#led.blue {
+    background: var(--c12);
+}
+
+/* 10) Custom switch styling */
+.switch {
+    position: relative;
+    height: 32px;
+    cursor: pointer;
+}
+
+/* Hide the default checkbox */
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* The slider-switch */
+.slider-switch {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--c5);
+    transition: .2s;
+    border-radius: 8px;
+    border: 4px solid var(--c12);
+}
+
+/* The knob */
+.slider-switch:before {
+    background-color: var(--c6);
+    transition: .2s;
+}
+
+/* When the checkbox is checked, change the colors */
+input:checked+.slider-switch {
+    background-color: var(--c11);
+}
