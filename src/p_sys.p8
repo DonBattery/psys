@@ -7,7 +7,7 @@ fns = {
     pprint("last war approaches", 28, 35, 11, 0, "l", true)
     flip()
     base_color, highlight_color, bg_color, dmg_color, world_str = color1, color2, color3, color4, str
-    gen_map(.48 + density * (.04 / 256), color1, color2, left == 1, right == 1, top == 1, down == 1)
+    gen_map(.47 + density * (.06 / 256), color1, color2, left == 1, right == 1, top == 1, down == 1)
   end,
   function(color1, color2, color3, color4, str)
     for x = 0, 127 do
@@ -30,10 +30,16 @@ function gpio_stack()
         poke(0x5f80, 1)
       elseif pin1 == 2 then
         local fn, number_of_params = peek(0x5f81), peek(0x5f82)
-        local params = {}
+        local params, s_params = {}, ""
         for i = 1, number_of_params do
-          add(params, peek(0x5f82 + i))
+          local val = peek(0x5f82 + i)
+          add(params, val)
+          s_params ..= val
+          if i < number_of_params then
+            s_params ..= " "
+          end
         end
+        debug:event("fn " .. fn .. " " .. s_params)
         fns[fn](unpack(params))
         poke(0x5f80, 1)
       end
@@ -41,10 +47,39 @@ function gpio_stack()
   })
 end
 
+function debugger()
+  return env({
+    l = {},
+    event = function(_ENV, msg)
+      add(
+        l, {
+          t = 300,
+          m = msg
+        }
+      )
+      if #l > 14 then
+        deli(l, 1)
+      end
+    end,
+    draw = function(_ENV)
+      local tmp = {}
+      for i, v in ipairs(l) do
+        v.t -= 1
+        if v.t > 0 then
+          add(tmp, v)
+        end
+        pprint(v.m, 2, (i - 1) * 8 + 10, v.t > 100 and 7 or v.t > 50 and 6 or 5, v.t > 100 and 6 or v.t > 50 and 5 or 0, "l", true)
+      end
+      l = tmp
+    end
+  })
+end
+
 function _init()
+  debug = debugger()
   gpio = gpio_stack()
   init_destructors()
-  gen_map(.5, 4, 3, true, true, true, true)
+  gen_map(.5, 4, 3, false, false, false, false)
   joy1 = joy(0)
   joy2 = joy(1)
   fg_part, bg_part = p_sys(), p_sys()
@@ -132,5 +167,10 @@ function _draw()
   local dist = sqrt(focus:sqrdist(ui.mpos))
   p_dir, p_force = ui.mpos - focus, dist < 16 and 0 or (dist - 16) / 32
 
+  debug:draw()
+  pset(0, 8, 0)
+  pset(127, 8, 0)
+  pset(0, 119, 0)
+  pset(127, 119, 0)
   pal(1, bg_color + 128, 1)
 end
