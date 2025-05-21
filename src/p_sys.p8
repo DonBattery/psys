@@ -1,14 +1,28 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
+-- functions which can be called from the webpage
 fns = {
+  -- 0 set debug mode
+  [0] = function(mode)
+    debug_mode = mode == 1
+    debug:event("debug mode is set to: " .. tostr(debug_mode))
+  end,
+
+  -- fn 1 - generate new world
   function(density, left, right, top, down, color1, color2, color3, color4, str)
     pprint("chaos emerges,", 24, 26, 11, 0, "l", true)
     pprint("last war approaches", 28, 35, 11, 0, "l", true)
     flip()
-    base_color, highlight_color, bg_color, dmg_color, world_str = color1, color2, color3, color4, str
-    gen_map(.47 + density * (.06 / 256), color1, color2, left == 1, right == 1, top == 1, down == 1)
+    base_color, highlight_color, bg_color, dmg_color, world_str = color1, color2, color3, color4, (2 / 256) * str
+    local d = .47 + density * (.06 / 256)
+    gen_map(d, color1, color2, left == 1, right == 1, top == 1, down == 1)
+    debug:event("new map generated")
+    debug:event("density: " .. d)
+    debug:event("str: " .. world_str)
   end,
+
+  -- fn 2 set world colors and strength
   function(color1, color2, color3, color4, str)
     for x = 0, 127 do
       for y = 8, 119 do
@@ -18,7 +32,20 @@ fns = {
         end
       end
     end
-    base_color, highlight_color, bg_color, dmg_color, world_str = color1, color2, color3, color4, str
+    base_color, highlight_color, bg_color, dmg_color, world_str = color1, color2, color3, color4, (2 / 256) * str
+    debug:event("pal update c1:" .. base_color .. " c2:" .. highlight_color .. " c3:" .. bg_color .. " c4:" .. dmg_color)
+    debug:event("world str update: " .. world_str)
+  end,
+
+  -- fn 3 set emitter force
+  function(force)
+    p_force = (4 / 256) * force
+    debug:event("force set to: " .. p_force)
+  end,
+
+  function(p_lo, p_hi, e_lo, e_hi)
+    particle_num = p_lo | (p_hi << 8)
+    emitter_num = e_lo | (e_hi << 8)
   end
 }
 
@@ -68,7 +95,7 @@ function debugger()
         if v.t > 0 then
           add(tmp, v)
         end
-        pprint(v.m, 2, (i - 1) * 8 + 10, v.t > 100 and 7 or v.t > 50 and 6 or 5, v.t > 100 and 6 or v.t > 50 and 5 or 0, "l", true)
+        if (debug_mode) pprint(v.m, 2, (i - 1) * 8 + 10, 7, 0, "l", true)
       end
       l = tmp
     end
@@ -88,8 +115,18 @@ function _init()
   focus = v2(64, 64)
   spd = v2()
   p_dir = v2(0, 0)
-  p_force = 0
+  p_force = 1
   bg_color = 1
+  particle_num = encode_particle({
+    kind = 5,
+    life = 7,
+    size = 0,
+    color = 13,
+    phy = 3
+  })
+  emitter_num = encode_emitter({
+    on_upd = 5
+  })
 end
 
 function _update60()
@@ -121,18 +158,9 @@ function _update60()
   focus.x = mid(0, focus.x + spd.x, 127)
   focus.y = mid(0, focus.y + spd.y, 127)
 
-  if (ui.lmbtn.clicked or ui.rmbtn.isdown) and p_coll(ui.mpos, { pos = v2(0, 8), size = v2(128, 112) }) then
-    emit(
-      focus, encode_particle({
-        kind = 5,
-        life = 7,
-        size = 0,
-        color = 13,
-        phy = 3
-      }), encode_emitter({
-        on_upd = 5
-      }), p_dir, p_force
-    )
+  -- p_coll(ui.mpos, { pos = v2(0, 8), size = v2(128, 112) }) -- inside the world
+  if (ui.lmbtn.clicked or ui.rmbtn.isdown) then
+    emit(focus, particle_num, emitter_num, p_dir, p_force)
   end
 end
 
@@ -159,15 +187,26 @@ function _draw()
   pprint("mem:" .. stat(0), 48, 122, c1, c2, "l", true)
   pprint("fps:" .. stat(7), 102, 122, c1, c2, "l", true)
 
-  fg_part:draw()
   ui:draw()
 
-  line(focus.x, focus.y, ui.mouse_x, ui.mouse_y, p_force == 0 and 7 or p_force < 1 and 10 or p_force < 2 and 9 or 8)
+  local c = 7
+  if p_force > 1 then
+    c = 10
+  end
+  if p_force > 2 then
+    c = 9
+  end
+  if p_force > 3 then
+    c = 8
+  end
+  line(focus.x, focus.y, ui.mouse_x, ui.mouse_y, c)
 
-  local dist = sqrt(focus:sqrdist(ui.mpos))
-  p_dir, p_force = ui.mpos - focus, dist < 16 and 0 or (dist - 16) / 32
+  p_dir = ui.mpos - focus
+
+  fg_part:draw()
 
   debug:draw()
+
   pset(0, 8, 0)
   pset(127, 8, 0)
   pset(0, 119, 0)
