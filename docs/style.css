@@ -66,6 +66,7 @@ canvas {
     width: 512px;
     height: 512px;
     image-rendering: pixelated;
+    cursor: none;
 }
 
 /* status LED */
@@ -151,6 +152,17 @@ canvas {
     transform: translateY(4px);
 }
 
+.gray {
+    --shadow: var(--c0);
+    --shadow-h: var(--c5);
+    --bg: var(--c5);
+    --bg-h: var(--c6);
+    --fg: var(--c7);
+    --fg-h: var(--c15);
+    --border: var(--c6);
+    --border-h: var(--c7);
+}
+
 .red {
     --shadow: var(--c0);
     --shadow-h: var(--c2);
@@ -198,6 +210,17 @@ canvas {
     --border-h: var(--c10);
 }
 
+.orange {
+    --shadow: var(--c0);
+    --shadow-h: var(--c4);
+    --bg: var(--c4);
+    --bg-h: var(--c9);
+    --fg: var(--c9);
+    --fg-h: var(--c10);
+    --border: var(--c9);
+    --border-h: var(--c10);
+}
+
 #generator_panel {
     position: absolute;
     top: 540px;
@@ -219,4 +242,27 @@ canvas {
     top: 0px;
     right: 518px;
     min-width: 1398px;
+}
+
+.scroll-list {
+    max-height: 440px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.scroll-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scroll-list::-webkit-scrollbar-track {
+    background: var(--c1);
+}
+
+.scroll-list::-webkit-scrollbar-thumb {
+    background: var(--c13);
+    border-radius: 4px;
+}
+
+.scroll-list::-webkit-scrollbar-thumb:hover {
+    background: var(--c12);
 }

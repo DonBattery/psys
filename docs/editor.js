@@ -11,6 +11,13 @@ window.pico8_gpio = new Uint8Array(128);
 // FIFO pipe to send function calls to the running PICO-8 instance
 const p8Queue = [];
 
+// Function ID enums
+const DEBUG_FN = 0;
+const GEN_FN = 1;
+const PAL_FN = 2;
+const FORCE_FN = 3;
+const EMITTER_FN = 4;
+
 // the status LED under the PICO-8 canvas, displaying the value of the first pin (0: not ready/red, 1: ready/green, 2: processing/blue)
 const led = document.getElementById('led');
 
@@ -29,13 +36,23 @@ const p8ExtColors = [
     "#065ab5", "#754665", "#ff6e59", "#ff9d81"
 ];
 
-// enqueue a call to PICO-8 (function ID, number of params, list of params)
-function p8(fnID, numInputs, inputs) {
-    if (!Array.isArray(inputs) || inputs.length < numInputs) {
-        console.warn('p8: inputs must be array of length ≥ numInputs');
-        return;
+// enqueue a call to PICO-8 (function ID, optional single param or list of params)
+function p8(fnID, inputs = []) {
+    // convert bool to number
+    if (typeof inputs === 'boolean') {
+        inputs = inputs ? 1 : 0;
     }
-    p8Queue.push({ fnID, numInputs, inputs });
+
+    // convert single values into list
+    if (!Array.isArray(inputs)) {
+        inputs = [inputs];
+    }
+
+    p8Queue.push({
+        fnID,
+        numInputs: inputs.length,
+        inputs
+    });
 }
 
 // process the PICO-8 call queue on every frame
@@ -59,19 +76,89 @@ function processP8Queue() {
     // update the LED (0: not ready/red, 1: ready/green, 2: processing/blue)
     $(led).attr('class', ['red_light', 'green_light', 'blue_light'][gpio[0]]);
 
+    // loop to the next frame
     requestAnimationFrame(processP8Queue);
 }
 
-// Editor API //
-
-// The generator panel's state
-let Generator = {
-    leftOpen: true,
-    rightOpen: true,
-    topOpen: true,
-    bottomOpen: true,
-    density: 0.5
+// encode particle options to a 16 bit number
+function encodeParticle(opts) {
+    const k = opts.kind & 0x7;
+    const l = (opts.life & 0x7) << 3;
+    const s = (opts.size & 0xF) << 6;
+    const c = (opts.color & 0xF) << 10;
+    const p = (opts.physics & 0x3) << 14;
+    return k | l | s | c | p;
 }
+
+// encode emitter options to a 16 bit number
+function encodeEmitter(opts) {
+    const b = opts.burst & 0x7;
+    const sp = (opts.spread & 0x3) << 3;
+    const co = (opts.cone & 0x7) << 5;
+    const d = (opts.delay & 0x3) << 8;
+    const u = (opts.update & 0xF) << 10;
+    const phy = (opts.override & 0x3) << 14;
+    return b | sp | co | d | u | phy;
+}
+
+// helper to split a 16-bit word into [lo, hi]
+function bytesFrom(word) {
+    return [word & 0xFF, (word >> 8) & 0xFF];
+}
+
+// Editor API //
+let Editor = {
+    currentPalette: 0,
+    currentParticle: 0,
+    currentEmitter: 0,
+
+    particle: {
+        id: 0,
+        name: "default particle",
+        kind: 5,
+        life: 7,
+        size: 0,
+        color: 13,
+        physics: 3
+    },
+
+    particles: [
+        {
+            id: 0,
+            name: "default particle",
+            kind: 5,
+            life: 7,
+            size: 0,
+            color: 13,
+            physics: 3
+        }
+    ],
+
+    emitter: {
+        id: 0,
+        name: "default emitter",
+        burst: 0,
+        spread: 0,
+        cone: 0,
+        delay: 0,
+        update: 5,
+        override: 0
+    },
+
+    emitters: [
+        {
+            id: 0,
+            name: "default emitter",
+            burst: 0,
+            spread: 0,
+            cone: 0,
+            delay: 0,
+            update: 5,
+            override: 0
+        }
+    ]
+};
+
 // initialize the 10 palettes
 const palettes = Array.from({ length: 10 }, () => ({
     base: p8Colors[4],
@@ -79,7 +166,7 @@ const palettes = Array.from({ length: 10 }, () => ({
     background: p8ExtColors[0],
     damage: p8Colors[0]
 }));
-let currentPalette = 0;  // 0 = “palette-1”, 1 = “palette-2”, …  
+
 
 // color picker dropdowns
 const pickers = [
@@ -92,52 +179,62 @@ const pickers = [
 // toggle the map sides (open or closed)
 function toggleSideButton(button, stateKey) {
     const $button = $(button);
-    const isOpen = Generator[stateKey];
+    const isOpen = EditorData.worldProps[stateKey];
 
     // Remove one class and add the other
     $button.removeClass(isOpen ? 'green' : 'red')
         .addClass(isOpen ? 'red' : 'green');
 
-    Generator[stateKey] = !isOpen;
+    EditorData.worldProps[stateKey] = !isOpen;
 }
 
+// tell PICO-8 to generate a new map
 function generateNewMap() {
-    // density → byte (470-530 → 0-255)
-    const rawD = parseFloat($('#density_slider').val());
-    const byteDensity = Math.round(((rawD - 470) / 60) * 255);
-
-    // world strength → byte (0-200 → 0-255)
-    const rawW = parseFloat($('#strength_slider').val());
-    const byteWorld = Math.round((rawW / 200) * 255);
-    p8(1, 10, [
-        byteDensity,
-        Generator.leftOpen ? 0 : 1,
-        Generator.rightOpen ? 0 : 1,
-        Generator.topOpen ? 0 : 1,
-        Generator.bottomOpen ? 0 : 1,
+    p8(GEN_FN, [
+        +$('#density_slider').val(),
+        EditorData.worldProps.leftOpen ? 0 : 1,
+        EditorData.worldProps.rightOpen ? 0 : 1,
+        EditorData.worldProps.topOpen ? 0 : 1,
+        EditorData.worldProps.bottomOpen ? 0 : 1,
         +$('#base-color').val(),
         +$('#highlight-color').val(),
         +$('#background-color').val(),
         +$('#damage-color').val(),
-        byteWorld
+        +$('#strength_slider').val()
     ]);
 }
 
-// send updated palette & strength to PICO-8 (fn_id = 2)
+// send updated palette & strength to PICO-8
 function sendPaletteUpdate() {
-    // read & byte-convert world strength (0–2 → 0–255)
-    const rawW = parseFloat($('#strength_slider').val());
-    const byteWorld = Math.round(
-        Math.max(0, Math.min(255, (rawW / 2) * 255))
-    );
-
-    p8(2, 5, [
+    p8(PAL_FN, [
         +$('#base-color').val(),
         +$('#highlight-color').val(),
         +$('#background-color').val(),
         +$('#damage-color').val(),
-        byteWorld
+        +$('#strength_slider').val()
     ]);
+}
+
+function sendForceUpdate() {
+    // send force value to PICO-8
+    let val = +$('#force_slider').val();
+
+    p8(FORCE_FN, val);
+
+    val = (4 / 256) * val;
+
+    let c = 'red';
+
+    if (val <= 1) {
+        c = 'gray';
+    } else if (val <= 2) {
+        c = 'yellow';
+    } else if (val <= 3) {
+        c = 'orange';
+    }
+
+    // update the force label's color accordingly
+    $('#force_label').removeClass('gray orange yellow red').addClass(c);
 }
 
 // populate a selected color picker with a palette & set default
@@ -174,9 +271,7 @@ function initColorPicker(selectId, palette, defaultIdx) {
 // populateColorPicker: loop pickers → set .val() & trigger preview
 function populateColorPicker(idx) {
     pickers.forEach(({ key, arr }) => {
-        $(`#${key}-color`)
-            .val(arr.indexOf(palettes[idx][key]))
-            .trigger('change');
+        $(`#${key}-color`).val(arr.indexOf(palettes[idx][key])).trigger('change');
     });
 }
 
@@ -202,6 +297,41 @@ function savePalettes() {
     URL.revokeObjectURL(url);
 }
 
+function sendParticleAndEmitterToPico8() {
+    // encode both current particle & emitter words
+    const partWord = encodeParticle(Editor.particle);
+    const emitWord = encodeEmitter(Editor.emitter);
+
+    // split into [lo,hi] bytes
+    const [pLo, pHi] = bytesFrom(partWord);
+    const [eLo, eHi] = bytesFrom(emitWord);
+
+    // send all four bytes to EMITTER_FN
+    p8(EMITTER_FN, [pLo, pHi, eLo, eHi]);
+}
+
+function populateOptSelectors() {
+
+    // auto wiring of the <select> dropdowns:
+    $('.particle-opts').each(function () {
+        // e.g. id = "select_particle_kind"  or  "select_emitter_update"
+        const [, group, prop] = this.id.split('_');
+        const defs = EditorData[group + 'Props'];
+        const def = defs && defs[prop];
+
+        const $sel = $(this);
+
+        def.values.forEach((_, i) => $sel.append(def.toOpt(i)));
+
+        $sel.val(Editor[group][prop]);
+
+        $sel.on('change', function () {
+            Editor[group][prop] = +this.value;
+            sendParticleAndEmitterToPico8();
+        });
+    });
+}
+
 function loadPalettes() {
     const file = this.files[0];
     if (!file) return;
@@ -219,7 +349,7 @@ function loadPalettes() {
                     palettes[i].background = p8ExtColors[lp.background];
                     palettes[i].damage = p8Colors[lp.damage];
                 });
-                populateColorPicker(currentPalette);
+                populateColorPicker(Editor.currentPalette);
             } else {
                 console.error('Invalid palette file format');
             }
@@ -230,7 +360,7 @@ function loadPalettes() {
         $('#load_palette_input').val('');
     };
     reader.readAsText(file);
-};
+}
 
 function setupMenuButtons() {
     var $buttons = $('.menu-btn');
@@ -240,8 +370,8 @@ function setupMenuButtons() {
 
         // reset all buttons to blue, then make this one red
         $buttons
-            .removeClass('red').addClass('blue')
-            .eq(idx).removeClass('blue').addClass('red');
+            .removeClass('orange').addClass('blue')
+            .eq(idx).removeClass('blue').addClass('orange');
 
         // hide all editors, then show the one at idx
         $('#editor_panel').children('[id$="_editor"]')
@@ -250,21 +380,306 @@ function setupMenuButtons() {
     });
 }
 
+
+// Function to populate the particle list
+function populateParticleList() {
+    const $list = $('#particle_list_col');
+
+    // Clear existing list (except header and 'new' button)
+    $list.find('.particle-item').remove();
+
+    // Add each particle to the list
+    Editor.particles.forEach(particle => {
+        const $item = $(`
+            <div class="row particle-item" data-id="${particle.id}">
+                <div class="base ${particle.id === Editor.currentParticleId ? 'orange' : 'blue'} interactive button flex-2 particle-name">
+                    ${particle.name}
+                </div>
+                <div class="base ${particle.id === 0 ? 'gray' : 'red'} interactive button flex-1 particle-delete" ${particle.id === 0 ? 'disabled' : ''}>
+                    delete
+                </div>
+            </div>
+        `);
+
+        // Insert before the 'new' button
+        $list.children().last().before($item);
+    });
+
+    // Attach click handlers for the particle names
+    $('.particle-name').click(function () {
+        const id = $(this).parent().data('id');
+        selectParticle(id);
+    });
+
+    // Attach click handlers for the delete buttons
+    $('.particle-delete').click(function () {
+        if ($(this).attr('disabled')) return;
+        const id = $(this).parent().data('id');
+        deleteParticle(id);
+    });
+}
+
+// Function to populate the emitter list
+function populateEmitterList() {
+    const $list = $('#emitter_list_row');
+
+    // Clear existing list (except header and 'new' button)
+    $list.find('.emitter-item').remove();
+
+    // Add each emitter to the list
+    Editor.emitters.forEach(emitter => {
+        const $item = $(`
+            <div class="row emitter-item" data-id="${emitter.id}">
+                <div class="base ${emitter.id === Editor.currentEmitterId ? 'orange' : 'blue'} interactive button flex-2 emitter-name">
+                    ${emitter.name}
+                </div>
+                <div class="base ${emitter.id === 0 ? 'gray' : 'red'} interactive button flex-1 emitter-delete" ${emitter.id === 0 ? 'disabled' : ''}>
+                    delete
+                </div>
+            </div>
+        `);
+
+        // Insert before the 'new' button
+        $list.children().last().before($item);
+    });
+
+    // Attach click handlers for the emitter names
+    $('.emitter-name').click(function () {
+        const id = $(this).parent().data('id');
+        selectEmitter(id);
+    });
+
+    // Attach click handlers for the delete buttons
+    $('.emitter-delete').click(function () {
+        if ($(this).attr('disabled')) return;
+        const id = $(this).parent().data('id');
+        deleteEmitter(id);
+    });
+}
+
+// Function to select a particle
+function selectParticle(id) {
+    // Find the particle by id
+    const particle = Editor.particles.find(p => p.id === id);
+    if (!particle) return;
+
+    // Update the current particle ID
+    Editor.currentParticleId = id;
+
+    // Update the Editor.particle object
+    Editor.particle = {
+        kind: particle.kind,
+        life: particle.life,
+        size: particle.size,
+        color: particle.color,
+        physics: particle.physics
+    };
+
+    // Update the form fields
+    $('#select_particle_name').val(particle.name);
+    $('#select_particle_kind').val(particle.kind);
+    $('#select_particle_life').val(particle.life);
+    $('#select_particle_size').val(particle.size);
+    $('#select_particle_color').val(particle.color);
+    $('#select_particle_physics').val(particle.physics);
+
+    // Update the particle list to highlight the selected particle
+    populateParticleList();
+
+    // Send the updated particle and emitter to PICO-8
+    sendParticleAndEmitterToPico8();
+}
+
+// Function to select an emitter
+function selectEmitter(id) {
+    // Find the emitter by id
+    const emitter = Editor.emitters.find(e => e.id === id);
+    if (!emitter) return;
+
+    // Update the current emitter ID
+    Editor.currentEmitterId = id;
+
+    // Update the Editor.emitter object
+    Editor.emitter = {
+        burst: emitter.burst,
+        spread: emitter.spread,
+        cone: emitter.cone,
+        delay: emitter.delay,
+        update: emitter.update,
+        override: emitter.override
+    };
+
+    // Update the form fields
+    $('#select_emitter_name').val(emitter.name);
+    $('#select_emitter_burst').val(emitter.burst);
+    $('#select_emitter_spread').val(emitter.spread);
+    $('#select_emitter_cone').val(emitter.cone);
+    $('#select_emitter_delay').val(emitter.delay);
+    $('#select_emitter_update').val(emitter.update);
+    $('#select_emitter_override').val(emitter.override);
+
+    // Update the emitter list to highlight the selected emitter
+    populateEmitterList();
+
+    // Send the updated particle and emitter to PICO-8
+    sendParticleAndEmitterToPico8();
+}
+
+// Function to create a new particle
+function createNewParticle() {
+    // Generate a new unique ID
+    const newId = Editor.particles.length > 0
+        ? Math.max(...Editor.particles.map(p => p.id)) + 1
+        : 1;
+
+    // Create a new particle with default values
+    const newParticle = {
+        id: newId,
+        name: `particle ${newId}`,
+        kind: 0,
+        life: 0,
+        size: 0,
+        color: 0,
+        physics: 0
+    };
+
+    // Add to the particles array
+    Editor.particles.push(newParticle);
+
+    // Select the new particle
+    selectParticle(newId);
+}
+
+// Function to create a new emitter
+function createNewEmitter() {
+    // Generate a new unique ID
+    const newId = Editor.emitters.length > 0
+        ? Math.max(...Editor.emitters.map(e => e.id)) + 1
+        : 1;
+
+    // Create a new emitter with default values
+    const newEmitter = {
+        id: newId,
+        name: `emitter ${newId}`,
+        burst: 0,
+        spread: 0,
+        cone: 0,
+        delay: 0,
+        update: 0,
+        override: 0
+    };
+
+    // Add to the emitters array
+    Editor.emitters.push(newEmitter);
+
+    // Select the new emitter
+    selectEmitter(newId);
+}
+
+// Function to delete a particle
+function deleteParticle(id) {
+    // Don't delete the default particle (id 0)
+    if (id === 0) return;
+
+    // Remove the particle from the array
+    Editor.particles = Editor.particles.filter(p => p.id !== id);
+
+    // If we deleted the currently selected particle, select the default one
+    if (Editor.currentParticleId === id) {
+        selectParticle(0);
+    } else {
+        // Just update the list
+        populateParticleList();
+    }
+}
+
+// Function to delete an emitter
+function deleteEmitter(id) {
+    // Don't delete the default emitter (id 0)
+    if (id === 0) return;
+
+    // Remove the emitter from the array
+    Editor.emitters = Editor.emitters.filter(e => e.id !== id);
+
+    // If we deleted the currently selected emitter, select the default one
+    if (Editor.currentEmitterId === id) {
+        selectEmitter(0);
+    } else {
+        // Just update the list
+        populateEmitterList();
+    }
+}
+
+// Function to update particle name when the input changes
+function updateParticleName() {
+    const name = $('#select_particle_name').val();
+    const particle = Editor.particles.find(p => p.id === Editor.currentParticleId);
+    if (particle) {
+        particle.name = name;
+        populateParticleList();
+    }
+}
+
+// Function to update emitter name when the input changes
+function updateEmitterName() {
+    const name = $('#select_emitter_name').val();
+    const emitter = Editor.emitters.find(e => e.id === Editor.currentEmitterId);
+    if (emitter) {
+        emitter.name = name;
+        populateEmitterList();
+    }
+}
+
+// Function to update particle properties when a dropdown changes
+function updateParticleProperty(property, value) {
+    // Update the Editor.particle object
+    Editor.particle[property] = value;
+
+    // Update the stored particle
+    const particle = Editor.particles.find(p => p.id === Editor.currentParticleId);
+    if (particle) {
+        particle[property] = value;
+    }
+
+    sendParticleAndEmitterToPico8();
+}
+
+// Function to update emitter properties when a dropdown changes
+function updateEmitterProperty(property, value) {
+    // Update the Editor.emitter object
+    Editor.emitter[property] = value;
+
+    // Update the stored emitter
+    const emitter = Editor.emitters.find(e => e.id === Editor.currentEmitterId);
+    if (emitter) {
+        emitter[property] = value;
+    }
+
+    sendParticleAndEmitterToPico8();
+}
+
 // once the page is loaded
 $(function () {
+    // generator panel
     $('#left_side_switch').click(() => toggleSideButton('#left_side_switch', 'leftOpen'));
     $('#right_side_switch').click(() => toggleSideButton('#right_side_switch', 'rightOpen'));
     $('#top_side_switch').click(() => toggleSideButton('#top_side_switch', 'topOpen'));
     $('#bottom_side_switch').click(() => toggleSideButton('#bottom_side_switch', 'bottomOpen'));
 
+    $('#force_slider').on('input', function () {
+        EditorData.worldProps.force = $(this).val();
+        $('#force_label').text(`force: ${(EditorData.worldProps.force * (4 / 256)).toFixed(4)}`); // convert back to 0 - 4
+    });
+    $('#force_slider').on('change', sendForceUpdate);
+
     $('#density_slider').on('input', function () {
-        Generator.density = $(this).val() / 1000; // Convert back to 0.47–0.53
-        $('#density_label').text(`density: ${Generator.density}`)
+        EditorData.worldProps.density = $(this).val();
+        $('#density_label').text(`density: ${(0.47 + EditorData.worldProps.density * (0.06 / 256)).toFixed(4)}`); // convert back to 0.47–0.53
     });
 
     $('#strength_slider').on('input', function () {
-        Generator.strength = $(this).val() / 100; // Convert back to 0-2
-        $('#strength_label').text(`world str: ${Generator.strength}`)
+        EditorData.worldProps.strength = $(this).val();
+        $('#strength_label').text(`world str: ${(EditorData.worldProps.strength * (2 / 256)).toFixed(2)}`); // Convert back to 0-2
     });
 
     initColorPicker('#base-color', p8Colors, 4);
@@ -272,11 +687,10 @@ $(function () {
     initColorPicker('#background-color', p8ExtColors, 0);
     initColorPicker('#damage-color', p8Colors, 0);
 
-    // bind each picker’s change → save into palettes[currentPalette]
+    // bind each picker’s change → save into palettes[Editor.currentPalette]
     pickers.forEach(({ key }) => {
-        $(`#${key}-color`).on('change', function () {
-            const c = $(this).find(':selected').data('color');
-            palettes[currentPalette][key] = c;
+        $(`#${key}-color`).on('change', () => {
+            palettes[Editor.currentPalette][key] = $(this).find(':selected').data('color');
         });
     });
 
@@ -284,14 +698,14 @@ $(function () {
     $('#palette-list')
         .val('1')         // default to “palette-1”
         .on('change', function () {
-            currentPalette = parseInt(this.value, 10) - 1;
-            populateColorPicker(currentPalette);
+            Editor.currentPalette = parseInt(this.value, 10) - 1;
+            populateColorPicker(Editor.currentPalette);
         });
 
     // load the initial palette
-    populateColorPicker(currentPalette);
+    populateColorPicker(Editor.currentPalette);
 
-    $('#base-color, #highlight-color, #background-color, #damage-color').on('change', sendPaletteUpdate);
+    $('#base-color, #highlight-color, #background-color, #damage-color, #strength_slider').on('change', sendPaletteUpdate);
 
     $('#generate-btn').click(generateNewMap);
 
@@ -301,7 +715,76 @@ $(function () {
 
     $('#load-btn').click(() => $('#load_palette_input').click());
 
+    // editor panel
+    $('#color_mode_button').click(() => {
+        EditorData.editorProps.extendedMode = !EditorData.editorProps.extendedMode;
+        document.documentElement.classList.toggle('extended-mode', EditorData.editorProps.extendedMode);
+        $('#color_mode_button').text("color mode: " + (EditorData.editorProps.extendedMode ? 'extended' : 'basic'));
+    });
+
+    $('#debug_button').click(() => {
+        EditorData.editorProps.debugMode = !EditorData.editorProps.debugMode;
+        $('#debug_button')
+            .removeClass('red green')
+            .addClass(EditorData.editorProps.debugMode ? 'green' : 'red')
+            .text(EditorData.editorProps.debugMode ? 'debug: on' : 'debug: off');
+        p8(DEBUG_FN, EditorData.editorProps.debugMode)
+    });
+
+    populateOptSelectors();
+
     setupMenuButtons();
+
+
+    // Initialize particle list
+    $('#particle_list_col').find('.base.green.interactive.button').click(createNewParticle);
+    $('#select_particle_name').on('input', updateParticleName);
+
+    // Initialize emitter list (note: there's a typo in HTML where it uses emitter_list_row instead of emitter_list_col)
+    $('#emitter_list_row').addClass('scroll-list');
+    $('#emitter_list_row').find('.base.green.interactive.button').click(createNewEmitter);
+    $('#select_emitter_name').on('input', updateEmitterName);
+
+    // Add event listeners for particle properties
+    $('#select_particle_kind').on('change', function () {
+        updateParticleProperty('kind', parseInt($(this).val()));
+    });
+    $('#select_particle_life').on('change', function () {
+        updateParticleProperty('life', parseInt($(this).val()));
+    });
+    $('#select_particle_size').on('change', function () {
+        updateParticleProperty('size', parseInt($(this).val()));
+    });
+    $('#select_particle_color').on('change', function () {
+        updateParticleProperty('color', parseInt($(this).val()));
+    });
+    $('#select_particle_physics').on('change', function () {
+        updateParticleProperty('physics', parseInt($(this).val()));
+    });
+
+    // Add event listeners for emitter properties
+    $('#select_emitter_burst').on('change', function () {
+        updateEmitterProperty('burst', parseInt($(this).val()));
+    });
+    $('#select_emitter_spread').on('change', function () {
+        updateEmitterProperty('spread', parseInt($(this).val()));
+    });
+    $('#select_emitter_cone').on('change', function () {
+        updateEmitterProperty('cone', parseInt($(this).val()));
+    });
+    $('#select_emitter_delay').on('change', function () {
+        updateEmitterProperty('delay', parseInt($(this).val()));
+    });
+    $('#select_emitter_update').on('change', function () {
+        updateEmitterProperty('update', parseInt($(this).val()));
+    });
+    $('#select_emitter_override').on('change', function () {
+        updateEmitterProperty('override', parseInt($(this).val()));
+    });
+
+    // Populate the lists
+    populateParticleList();
+    populateEmitterList();
 
     // start the PICO-8 call processor loop
     requestAnimationFrame(processP8Queue);

@@ -15,7 +15,13 @@
     <!-- LED indicator -->
     <div id="led" class="themable theme-blue"></div>
 
+    <!-- generator panel -->
     <div id="generator_panel">
+        <div id="force_row" class="base blue row">
+            <div class="base gray left flex-1" id="force_label">force: 1</div>
+            <input type="range" min="0" max="255" step="1" value="64" name="force_slider" class="flex-1"
+                id="force_slider">
+        </div>
         <div id="shape_row" class="base blue row">
             <div id="left_side_switch" class="base green interactive button flex-1">
                 left
@@ -32,12 +38,12 @@
         </div>
         <div id="density_row" class="base blue row">
             <div class="base blue left flex-1" id="density_label">density: 0.5</div>
-            <input type="range" min="470" max="530" step="1" value="500" name="density_slider" class="flex-1"
+            <input type="range" min="0" max="255" step="1" value="128" name="density_slider" class="flex-1"
                 id="density_slider">
         </div>
         <div id="strength_row" class="base blue row">
             <div class="base blue left flex-1" id="strength_label">world str: 1</div>
-            <input type="range" min="0" max="200" step="1" value="100" name="strength_slider" class="flex-1"
+            <input type="range" min="0" max="255" step="1" value="128" name="strength_slider" class="flex-1"
                 id="strength_slider">
         </div>
 
@@ -87,9 +93,18 @@
         </div>
     </div>
 
+    <!-- editor panel  -->
     <div class="base blue" id="editor_panel">
+        <div class="row">
+            <div class="base blue interactive button" id="color_mode_button">
+                color mode: basic
+            </div>
+            <div class="base red interactive button" id="debug_button">
+                debug: off
+            </div>
+        </div>
         <div class="row" id="editor_menu">
-            <div class="base red interactive button menu-btn flex-1">particles</div>
+            <div class="base orange interactive button menu-btn flex-1">particles</div>
             <div class="base blue interactive button menu-btn flex-1">effects</div>
             <div class="base blue interactive button menu-btn flex-1">tables</div>
             <div class="base blue interactive button menu-btn flex-1">export</div>
@@ -97,38 +112,81 @@
         <div id="particle_editor">
             <div class="row">
                 <div class="base blue flex-1" id="particle_editor_particle_col">
-
+                    particle options
                     <div class="row">
                         <div class="base blue flex-1">name: </div>
-                        <input type="text" class="base blue flex-3">
+                        <input type="text" class="base blue interactive flex-3" id="select_particle_name">
                     </div>
                     <div class="row">
-                        <select id="select_particle_kind" class="base blue interactive flex-1">
-                            <option value="0">pixel</option>
-                            <option value="1">circle</option>
-                            <option value="2">filled circle</option>
-                            <option value="3">square</option>
-                            <option value="4">line</option>
-                            <option value="5">dotted circle</option>
-                            <option value="6">dotted line</option>
-                            <option value="7">rotating dotted line</option>
-                        </select>
-                        <select id="select_particle_life" class="base blue interactive flex-1">
-                            <option value="0">6-12 frames</option>
-                            <option value="1">12-24 frames</option>
-                            <option value="2">24-32 frames</option>
-                        </select>
+                        <div class="base blue flex-1">kind: </div>
+                        <select id="select_particle_kind" class="base blue interactive particle-opts flex-3"></select>
                     </div>
                     <div class="row">
-                        <div class="base blue flex-1">size</div>
-                        <div class="base blue flex-1">color</div>
+                        <div class="base blue flex-1">life: </div>
+                        <select id="select_particle_life" class="base blue interactive particle-opts flex-3"></select>
                     </div>
                     <div class="row">
-                        <div class="base blue flex-1">physics</div>
+                        <div class="base blue flex-1">size: </div>
+                        <select id="select_particle_size" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">color: </div>
+                        <select id="select_particle_color" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">physics: </div>
+                        <select id="select_particle_physics"
+                            class="base blue interactive particle-opts flex-3"></select>
                     </div>
                 </div>
-                <div class="base blue flex-1">
-                    emitter col
+                <div class="base blue flex-1" id="particle_editor_emitter_col">
+                    emitter options
+                    <div class="row">
+                        <div class="base blue flex-1">name: </div>
+                        <input type="text" class="base blue interactive flex-3" id="select_emitter_name">
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">burst: </div>
+                        <select id="select_emitter_burst" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">spread: </div>
+                        <select id="select_emitter_spread" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">cone: </div>
+                        <select id="select_emitter_cone" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">delay: </div>
+                        <select id="select_emitter_delay" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">update: </div>
+                        <select id="select_emitter_update" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">physics override: </div>
+                        <select id="select_emitter_override"
+                            class="base blue interactive particle-opts flex-1"></select>
+
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="row">
+                    <div class="base blue scroll-list flex-1" id="particle_list_col">
+                        <div class="row">
+                            <!-- populated with jQuery -->
+                        </div>
+                        <div class="base green interactive button">new</div>
+                    </div>
+                    <div class="base blue scroll-list flex-1" id="emitter_list_row">
+                        <div class="row">
+                            <!-- populated with jQuery -->
+                        </div>
+                        <div class="base green interactive button">new</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -145,6 +203,7 @@
 
     <!-- import jQuery, the editor logic and the PICO-8 test cart -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="data.js"></script>
     <script src="editor.js"></script>
     <script src="psys.js"></script>
 </body>
