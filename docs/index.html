@@ -9,145 +9,203 @@
 </head>
 
 <body>
-    <!-- editor container -->
-    <div id="editor" class="themable theme-blue">
-        <!-- tab bar -->
-        <div class="tabs">
-            <button class="tab-btn themable theme-blue active" data-target="particles">particles</button>
-            <button class="tab-btn themable theme-blue" data-target="effects">effects</button>
-            <button class="tab-btn themable theme-blue" data-target="tables">tables</button>
-            <button class="tab-btn themable theme-blue" data-target="export">export</button>
-        </div>
-
-        <!-- tab contents -->
-        <div class="tab-content active" id="particles">
-            <p>particles mode</p>
-        </div>
-        <div class="tab-content" id="effects">
-            <p>effects mode</p>
-        </div>
-        <div class="tab-content" id="tables">
-            <p>tables mode</p>
-        </div>
-        <div class="tab-content" id="export">
-            <p>export mode</p>
-        </div>
-    </div>
-
     <!-- pico-8 canvas -->
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
 
     <!-- LED indicator -->
     <div id="led" class="themable theme-blue"></div>
 
-    <!-- generator container -->
-    <div id="generator" class="generator themable theme-blue">
-        <!-- direction row 1 -->
-        <div class="row direction-row">
-            <label class="colored-label themable theme-blue flex-2">left</label>
-            <label class="switch themable theme-blue flex-1">
-                <input type="checkbox" id="left-switch">
-                <span class="slider-switch themable theme-blue"></span>
-            </label>
-            <label class="colored-label themable theme-blue flex-2">right</label>
-            <label class="switch themable theme-blue flex-1">
-                <input type="checkbox" id="right-switch">
-                <span class="slider-switch themable theme-blue"></span>
-            </label>
+    <!-- generator panel -->
+    <div id="generator_panel">
+        <div id="force_row" class="base blue row">
+            <div class="base gray left flex-1" id="force_label">force: 1</div>
+            <input type="range" min="0" max="255" step="1" value="64" name="force_slider" class="flex-1"
+                id="force_slider">
+        </div>
+        <div id="shape_row" class="base blue row">
+            <div id="left_side_switch" class="base green interactive button flex-1">
+                left
+            </div>
+            <div id="right_side_switch" class="base green interactive button flex-1 ">
+                right
+            </div>
+            <div id="top_side_switch" class="base green interactive button flex-1">
+                top
+            </div>
+            <div id="bottom_side_switch" class="base green interactive button flex-1">
+                bot
+            </div>
+        </div>
+        <div id="density_row" class="base blue row">
+            <div class="base blue left flex-1" id="density_label">density: 0.5</div>
+            <input type="range" min="0" max="255" step="1" value="128" name="density_slider" class="flex-1"
+                id="density_slider">
+        </div>
+        <div id="strength_row" class="base blue row">
+            <div class="base blue left flex-1" id="strength_label">world str: 1</div>
+            <input type="range" min="0" max="255" step="1" value="128" name="strength_slider" class="flex-1"
+                id="strength_slider">
         </div>
 
-        <!-- direction row 2 -->
-        <div class="row direction-row">
-            <label class="colored-label themable theme-blue flex-2">top</label>
-            <label class="switch themable theme-blue flex-1">
-                <input type="checkbox" id="top-switch">
-                <span class="slider-switch themable theme-blue"></span>
-            </label>
-            <label class="colored-label themable theme-blue flex-2">bot</label>
-            <label class="switch themable theme-blue flex-1">
-                <input type="checkbox" id="bottom-switch">
-                <span class="slider-switch themable theme-blue"></span>
-            </label>
-        </div>
-
-        <!-- density row -->
-        <div class="row density-row">
-            <label class="colored-label themable theme-blue flex-1">density</label>
-            <span class="colored-label themable theme-blue flex-1" id="density-value">0.50</span>
-            <input type="range" id="density-slider" class="slider themable theme-blue flex-3" min="0.48" max="0.52"
-                step="0.001" value="0.50">
-        </div>
-
-        <!-- world strength row -->
-        <div class="row world-strength-row">
-            <label class="colored-label themable theme-blue flex-1">world strength</label>
-            <span class="colored-label themable theme-blue flex-1" id="world-strength-value">1.00</span>
-            <input type="range" id="world-strength-slider" class="slider themable theme-blue flex-3" min="0" max="2"
-                step="0.01" value="1">
-        </div>
-
-        <!-- base color row -->
-        <div class="row color-row">
-            <label class="colored-label themable theme-blue flex-3">base</label>
-            <div class="color-dropdown flex-1">
-                <div id="base-color-preview" class="selected-color themable theme-blue"></div>
-                <select id="base-color" class="themable theme-blue color-select"></select>
+        <!-- color pickers -->
+        <div class="row">
+            <label class="base blue flex-1">c1</label>
+            <div class="flex-2 picker">
+                <select id="base-color" class="base blue interactive"></select>
+            </div>
+            <label class="base blue flex-1">c2</label>
+            <div class="flex-2 picker">
+                <select id="highlight-color" class="base blue interactive"></select>
+            </div>
+            <label class="base blue flex-1">c3</label>
+            <div class="flex-2 picker">
+                <select id="background-color" class="base blue interactive"></select>
+            </div>
+            <label class="base blue flex-1">c4</label>
+            <div class="flex-2 picker">
+                <select id="damage-color" class="base blue interactive"></select>
             </div>
         </div>
 
-        <!-- highlight color row -->
-        <div class="row color-row">
-            <label class="colored-label themable theme-blue flex-3">highlight</label>
-            <div class="color-dropdown flex-1">
-                <div id="highlight-color-preview" class="selected-color themable theme-blue"></div>
-                <select id="highlight-color" class="themable theme-blue color-select"></select>
-            </div>
-        </div>
+        <div class="row">
+            <div class="base red   interactive button flex-1" id="save-btn">save</div>
 
-        <!-- background color row -->
-        <div class="row color-row">
-            <label class="colored-label themable theme-blue flex-3">background</label>
-            <div class="color-dropdown flex-1">
-                <div id="background-color-preview" class="selected-color themable theme-blue"></div>
-                <select id="background-color" class="themable theme-blue extended-color-select"></select>
-            </div>
-        </div>
+            <div class="base green interactive button flex-1" id="load-btn">load</div>
+            <input type="file" accept=".json" class="invisible" id="load_palette_input">
 
-        <!-- damage color row -->
-        <div class="row color-row">
-            <label class="colored-label themable theme-blue flex-3">damage</label>
-            <div class="color-dropdown flex-1">
-                <div id="damage-color-preview" class="selected-color themable theme-blue"></div>
-                <select id="damage-color" class="themable theme-blue color-select"></select>
-            </div>
-        </div>
-
-        <!-- generate button + palette selector -->
-        <div class="row generate-row">
-            <!-- generate button -->
-            <button id="generate-btn" class="themable theme-blue interactive flex-1">
-                generate
-            </button>
-            <!-- palette dropdown -->
-            <select id="palette-select" class="themable theme-blue flex-2">
-                <option value="1">palette-1</option>
-                <option value="2">palette-2</option>
-                <option value="3">palette-3</option>
-                <option value="4">palette-4</option>
-                <option value="5">palette-5</option>
-                <option value="6">palette-6</option>
-                <option value="7">palette-7</option>
-                <option value="8">palette-8</option>
-                <option value="9">palette-9</option>
-                <option value="10">palette-10</option>
+            <select id="palette-list" class="base blue interactive flex-1">
+                <option value="1">pal 1</option>
+                <option value="2">pal 2</option>
+                <option value="3">pal 3</option>
+                <option value="4">pal 4</option>
+                <option value="5">pal 5</option>
+                <option value="6">pal 6</option>
+                <option value="7">pal 7</option>
+                <option value="8">pal 8</option>
+                <option value="9">pal 9</option>
+                <option value="10">pal 10</option>
             </select>
+        </div>
+
+
+        <div class="base yellow interactive button" id="generate-btn">
+            generate
+        </div>
+    </div>
+
+    <!-- editor panel  -->
+    <div class="base blue" id="editor_panel">
+        <div class="row">
+            <div class="base blue interactive button" id="color_mode_button">
+                color mode: basic
+            </div>
+            <div class="base red interactive button" id="debug_button">
+                debug: off
+            </div>
+        </div>
+        <div class="row" id="editor_menu">
+            <div class="base orange interactive button menu-btn flex-1">particles</div>
+            <div class="base blue interactive button menu-btn flex-1">effects</div>
+            <div class="base blue interactive button menu-btn flex-1">tables</div>
+            <div class="base blue interactive button menu-btn flex-1">export</div>
+        </div>
+        <div id="particle_editor">
+            <div class="row">
+                <div class="base blue flex-1" id="particle_editor_particle_col">
+                    particle options
+                    <div class="row">
+                        <div class="base blue flex-1">name: </div>
+                        <input type="text" class="base blue interactive flex-3" id="select_particle_name">
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">kind: </div>
+                        <select id="select_particle_kind" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">life: </div>
+                        <select id="select_particle_life" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">size: </div>
+                        <select id="select_particle_size" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">color: </div>
+                        <select id="select_particle_color" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">physics: </div>
+                        <select id="select_particle_physics"
+                            class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                </div>
+                <div class="base blue flex-1" id="particle_editor_emitter_col">
+                    emitter options
+                    <div class="row">
+                        <div class="base blue flex-1">name: </div>
+                        <input type="text" class="base blue interactive flex-3" id="select_emitter_name">
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">burst: </div>
+                        <select id="select_emitter_burst" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">spread: </div>
+                        <select id="select_emitter_spread" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">cone: </div>
+                        <select id="select_emitter_cone" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">delay: </div>
+                        <select id="select_emitter_delay" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">update: </div>
+                        <select id="select_emitter_update" class="base blue interactive particle-opts flex-3"></select>
+                    </div>
+                    <div class="row">
+                        <div class="base blue flex-1">physics override: </div>
+                        <select id="select_emitter_override"
+                            class="base blue interactive particle-opts flex-1"></select>
+
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="row">
+                    <div class="base blue scroll-list flex-1" id="particle_list_col">
+                        <div class="row">
+                            <!-- populated with jQuery -->
+                        </div>
+                        <div class="base green interactive button">new</div>
+                    </div>
+                    <div class="base blue scroll-list flex-1" id="emitter_list_row">
+                        <div class="row">
+                            <!-- populated with jQuery -->
+                        </div>
+                        <div class="base green interactive button">new</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="base blue invisible" id="effect_editor">
+            effect_editor
+        </div>
+        <div class="base blue invisible" id="table_editor">
+            table_editor
+        </div>
+        <div class="base blue invisible" id="export_editor">
+            export_editor
         </div>
     </div>
 
     <!-- import jQuery, the editor logic and the PICO-8 test cart -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="data.js"></script>
     <script src="editor.js"></script>
-    <script src="test.js"></script>
+    <script src="psys.js"></script>
 </body>
 
 </html>
