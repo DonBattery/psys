@@ -249,7 +249,6 @@ function encode_particle(opts)
   return k | l | s | c | p
 end
 
--- NEW
 -- bits    0–2:   burst      (3 bits)
 --        3–4:   spread     (2 bits)
 --        5–7:   cone       (3 bits)

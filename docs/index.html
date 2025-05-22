@@ -12,8 +12,11 @@
     <!-- pico-8 canvas -->
     <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
 
-    <!-- LED indicator -->
-    <div id="led" class="themable theme-blue"></div>
+    <!-- reset button -->
+    <div id="reset"></div>
+
+    <!-- status LED  -->
+    <div id="led"></div>
 
     <!-- generator panel -->
     <div id="generator_panel">
@@ -71,7 +74,6 @@
             <div class="base red   interactive button flex-1" id="save-btn">save</div>
 
             <div class="base green interactive button flex-1" id="load-btn">load</div>
-            <input type="file" accept=".json" class="invisible" id="load_palette_input">
 
             <select id="palette-list" class="base blue interactive flex-1">
                 <option value="1">pal 1</option>
@@ -181,7 +183,7 @@
                         </div>
                         <div class="base green interactive button">new</div>
                     </div>
-                    <div class="base blue scroll-list flex-1" id="emitter_list_row">
+                    <div class="base blue scroll-list flex-1" id="emitter_list_col">
                         <div class="row">
                             <!-- populated with jQuery -->
                         </div>
@@ -201,10 +203,13 @@
         </div>
     </div>
 
+    <!-- the state loader -->
+    <input type="file" accept=".json" class="invisible" id="load_state">
+
     <!-- import jQuery, the editor logic and the PICO-8 test cart -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script src="data.js"></script>
     <script src="editor.js"></script>
+    <script src="state.js"></script>
     <script src="psys.js"></script>
 </body>
 
