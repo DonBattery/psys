@@ -1,7 +1,9 @@
+let EditorState = {
+    resetTimer: null,
 
-// The generator panel's state
-let EditorData = {
-
+    currentPalette: 0,
+    currentParticle: 0,
+    currentEmitter: 0,
 
     // editor properties
     editorProps: {
@@ -149,6 +151,28 @@ let EditorData = {
         }
     },
 
+    particle: {
+        id: 0,
+        name: "default particle",
+        kind: 5,
+        life: 7,
+        size: 0,
+        color: 13,
+        physics: 3
+    },
+
+    particles: [
+        {
+            id: 0,
+            name: "default particle",
+            kind: 5,
+            life: 7,
+            size: 0,
+            color: 13,
+            physics: 3
+        }
+    ],
+
     // emitter properties
     emitterProps: {
         burst: {
@@ -266,5 +290,43 @@ let EditorData = {
                 }
             ]
         }
-    }
+    },
+
+    emitter: {
+        id: 0,
+        name: "default emitter",
+        burst: 0,
+        spread: 0,
+        cone: 0,
+        delay: 0,
+        update: 5,
+        override: 0
+    },
+
+    emitters: [
+        {
+            id: 0,
+            name: "default emitter",
+            burst: 0,
+            spread: 0,
+            cone: 0,
+            delay: 0,
+            update: 5,
+            override: 0
+        }
+    ],
+
+    palettes: Array.from({ length: 10 }, () => ({
+        base: 4,
+        highlight: 3,
+        background: 0,
+        damage: 0
+    })),
+
+    pickers: [
+        { key: 'base', arr: p8Colors },
+        { key: 'highlight', arr: p8Colors },
+        { key: 'background', arr: p8ExtColors },
+        { key: 'damage', arr: p8Colors }
+    ]
 }
